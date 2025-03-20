@@ -6,7 +6,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 public class PlayerConfigurator : MonoBehaviour
 {
     [SerializeField]
-    private AssetReferenceGameObject m_HatAssetReference;
+    private GameObject m_HatInstance;
 
     [SerializeField]
     private Transform m_HatAnchor;
@@ -15,19 +15,16 @@ public class PlayerConfigurator : MonoBehaviour
 
     void Start()
     {
-        SetHat(string.Format("Hat{0:00}", GameManager.s_ActiveHat));
+        LoadInRandomHat();
     }
 
-    public void SetHat(string hatKey)
+    private void LoadInRandomHat()
     {
-        if (!m_HatAssetReference.RuntimeKeyIsValid())
-        {
-            return;
-        }
+        int randomIndex = Random.Range(0, 6);
+        string hatAddress = string.Format("Hat{0:00}", randomIndex);
 
-        m_HatLoadOpHandle = m_HatAssetReference.LoadAssetAsync<GameObject>();
+        m_HatLoadOpHandle = Addressables.LoadAssetAsync<GameObject>(hatAddress);
         m_HatLoadOpHandle.Completed += OnHatLoadComplete;
-
     }
 
     private void OnHatLoadComplete(AsyncOperationHandle<GameObject> asyncOperationHandle)
@@ -35,7 +32,7 @@ public class PlayerConfigurator : MonoBehaviour
         if (asyncOperationHandle.Status == AsyncOperationStatus.Succeeded)
         {
 
-            Instantiate(asyncOperationHandle.Result, m_HatAnchor);
+            m_HatInstance = Instantiate(asyncOperationHandle.Result, m_HatAnchor);
         }
     }
 
@@ -43,5 +40,15 @@ public class PlayerConfigurator : MonoBehaviour
     {
         m_HatLoadOpHandle.Completed -= OnHatLoadComplete;
 
+    }
+    private void Update()
+    {
+        if (Input.GetMouseButtonUp(1))
+        {
+            Destroy(m_HatInstance);
+            Addressables.ReleaseInstance(m_HatLoadOpHandle);
+
+            LoadInRandomHat();
+        }
     }
 }
