@@ -6,7 +6,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 public class PlayerConfigurator : MonoBehaviour
 {
     [SerializeField]
-    private string m_Address;
+    private AssetReference m_HatAssetReference;
 
     [SerializeField]
     private Transform m_HatAnchor;
@@ -20,9 +20,13 @@ public class PlayerConfigurator : MonoBehaviour
 
     public void SetHat(string hatKey)
     {
-        m_HatLoadOpHandle = Addressables.LoadAssetAsync<GameObject>(m_Address);
-        m_HatLoadOpHandle.Completed += OnHatLoadComplete;
+        if (!m_HatAssetReference.RuntimeKeyIsValid())
+        {
+            return;
+        }
 
+        m_HatLoadOpHandle = m_HatAssetReference.LoadAssetAsync<GameObject>();
+        m_HatLoadOpHandle.Completed += OnHatLoadComplete;
 
     }
 
@@ -30,6 +34,7 @@ public class PlayerConfigurator : MonoBehaviour
     {
         if (asyncOperationHandle.Status == AsyncOperationStatus.Succeeded)
         {
+
             Instantiate(asyncOperationHandle.Result, m_HatAnchor);
         }
     }
@@ -37,6 +42,6 @@ public class PlayerConfigurator : MonoBehaviour
     private void OnDisable()
     {
         m_HatLoadOpHandle.Completed -= OnHatLoadComplete;
-        ;
+
     }
 }
