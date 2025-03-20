@@ -1,32 +1,42 @@
 ﻿using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 // Used for the Hat selection logic
 public class PlayerConfigurator : MonoBehaviour
 {
     [SerializeField]
+    private string m_Address;
+
+    [SerializeField]
     private Transform m_HatAnchor;
 
-    private ResourceRequest m_HatLoadingRequest;
+    private AsyncOperationHandle<GameObject> m_HatLoadOpHandle;
 
     void Start()
-    {           
+    {
         SetHat(string.Format("Hat{0:00}", GameManager.s_ActiveHat));
     }
 
     public void SetHat(string hatKey)
     {
-        m_HatLoadingRequest = Resources.LoadAsync(hatKey);
-        m_HatLoadingRequest.completed += OnHatLoaded;
+        m_HatLoadOpHandle = Addressables.LoadAssetAsync<GameObject>(m_Address);
+        m_HatLoadOpHandle.Completed += OnHatLoadComplete;
+
+
     }
 
-    private void OnHatLoaded(AsyncOperation asyncOperation)
+    private void OnHatLoadComplete(AsyncOperationHandle<GameObject> asyncOperationHandle)
     {
-        Instantiate(m_HatLoadingRequest.asset as GameObject, m_HatAnchor, false);
+        if (asyncOperationHandle.Status == AsyncOperationStatus.Succeeded)
+        {
+            Instantiate(asyncOperationHandle.Result, m_HatAnchor);
+        }
     }
 
     private void OnDisable()
     {
-        if (m_HatLoadingRequest != null)
-            m_HatLoadingRequest.completed -= OnHatLoaded;
+        m_HatLoadOpHandle.Completed -= OnHatLoadComplete;
+        ;
     }
 }
